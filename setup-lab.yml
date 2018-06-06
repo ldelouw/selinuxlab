@@ -80,8 +80,6 @@
 
   - name: Add a SMB user "tester" with the password "tester"
     command: printf "tester\ntester\n" | smbpasswd -a -s tester
-    # ignore_errors: yes
-    #
 
   - name: Ensure HTTPd is enabled and running
     service: 
