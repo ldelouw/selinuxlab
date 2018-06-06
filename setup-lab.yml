@@ -16,6 +16,7 @@
     with_items:
       - libselinux-python
       - policycoreutils-python
+      - policycoreutils-devel
       - setroubleshoot-server
       - setools-console
       - httpd
