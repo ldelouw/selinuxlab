@@ -1,0 +1,10 @@
+[Unit]
+Description=Testing SELinux app
+
+[Service]
+Type=forking
+ExecStart=/usr/local/sbin/testapp
+ExecStop=/usr/bin/killall testapp
+
+[Install]
+WantedBy=multi-user.target

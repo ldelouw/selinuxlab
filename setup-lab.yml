@@ -1,0 +1,138 @@
+---
+- hosts: lvrabec-hosts
+  name: Prepares a SELinux workshop
+  become: yes
+  tasks:
+
+  - name: Update System to latest
+    yum:
+      name: '*'
+      state: latest
+
+ - name: install packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - libselinux-python
+      - policycoreutils-python
+      - setroubleshoot-server.x86_64
+      - httpd
+      - php
+      - nfs-utils
+      - samba
+      - samba-client
+      - tomcat
+
+  - name: Create a Samba Config
+    copy:
+      src: files/smb.conf
+      dest: /etc/samba/smb.conf
+
+  - name: Create a NFS config
+    copy:
+      src: files/exports
+      dest: /etc/exports
+
+  - name: Enable NFS v4.2
+    lineinfile:
+      path: /etc/sysconfig/nfs
+      state: present
+      regexp: '^RPCNFSDARGS='
+      line: RPCNFSDARGS="-V 4.2"
+
+  - name: create the SMB Share
+    file:
+      path: /share
+      state: directory
+
+  - name: create the NFS-Share
+    file:
+      path: /nfsshare
+      state: directory
+
+  - name: Add a "tester" user with password "tester"
+    user:
+      name: tester
+      shell: /bin/bash
+      password: tester
+  
+  - name: copy mail.php
+    copy: 
+      src: files/mail.php
+      dest: /var/www/html/mail.php
+
+  - name: copy the CGI script
+    copy:
+      src: files/shadow.sh
+      dest: /var/www/cgi-bin/shadow.sh
+      mode: 0755
+
+  - name: Shoot your self in the foot set mode 666 for /etc/shadow
+    file:
+      path: /etc/shadow
+      mode: 0666
+
+  - name: Ensure SELinux is in enforcing mode
+    selinux:
+      policy: targeted
+      state: enforcing
+
+  - name: Add a SMB user "tester" with the password "tester"
+    command: printf "tester\ntester\n" | smbpasswd -a -s tester
+    # ignore_errors: yes
+    #
+
+  - name: Ensure HTTPd is enabled and running
+    service: 
+      name: httpd
+      state: started
+      enabled: yes
+
+  - name: Ensure Samba is enabled and running
+    service: 
+      name: smb
+      state: started
+      enabled: yes
+
+  - name: Ensure NFS is enabled and running
+    service: 
+      name: nfs
+      state: started
+      enabled: yes
+
+  - name: Ensure NFS is enabled and running
+    service: 
+      name: tomcat
+      state: started
+      enabled: yes
+
+  - name: Open firewalld on port 8080/tcp
+    firewalld:
+      port: 8080/tcp
+      state: enabled
+      permanent: true
+
+  - name: Ensure SELinux test app is on system
+    copy:
+      src: files/sample.war
+      dest: /var/lib/tomcat/webapps/sample.war
+      mode: 0644
+
+  - name: Ensure SELinux test app is on system
+    copy:
+      src: files/testapp
+      dest: /usr/local/sbin/testapp
+      mode: 0755
+
+  - name: Ensure SELinux test app service file is on system
+    copy:
+      src: files/testapp.service
+      dest: /usr/lib/systemd/system/testapp.service
+      mode: 0644
+
+  - name: Reboot host
+    shell: sleep 10 && /sbin/shutdown -r now
+    async: 300
+    poll: 0
+    become: true
