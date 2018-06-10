@@ -2,6 +2,7 @@
 - hosts: all
   name: Prepares a SELinux workshop
   become: yes
+  remote_user: root
   tasks:
 
   - name: Update System to latest

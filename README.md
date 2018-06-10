@@ -16,7 +16,7 @@ This is an Ansible playbook and related files to set up a SELinux Lab on Redhat 
 ## Usage:
 
 ```bash
-ansible-play -i inventory -u root -k setup-lab.yml
+ansible-play -k setup-lab.yml
 ```
 
 ## Future development
