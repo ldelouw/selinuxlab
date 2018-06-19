@@ -1,7 +1,8 @@
 ---
-- hosts: lvrabec-hosts
+- hosts: all
   name: Prepares a SELinux workshop
   become: yes
+  remote_user: root
   tasks:
 
   - name: Update System to latest
@@ -9,14 +10,16 @@
       name: '*'
       state: latest
 
- - name: install packages
+  - name: install packages
     yum:
       name: "{{ item }}"
       state: present
     with_items:
       - libselinux-python
       - policycoreutils-python
-      - setroubleshoot-server.x86_64
+      - policycoreutils-devel
+      - setroubleshoot-server
+      - setools-console
       - httpd
       - php
       - nfs-utils
@@ -79,9 +82,7 @@
       state: enforcing
 
   - name: Add a SMB user "tester" with the password "tester"
-    command: printf "tester\ntester\n" | smbpasswd -a -s tester
-    # ignore_errors: yes
-    #
+    shell: printf "tester\ntester\n" | smbpasswd -a -s tester
 
   - name: Ensure HTTPd is enabled and running
     service: 
@@ -101,6 +102,12 @@
       state: started
       enabled: yes
 
+  - name: Ensure Firewalld is enabled and running
+    service:
+      name: firewalld
+      state: started
+      enabled: yes
+
   - name: Ensure NFS is enabled and running
     service: 
       name: tomcat
@@ -112,6 +119,16 @@
       port: 8080/tcp
       state: enabled
       permanent: true
+
+  - name: Open firewalld for our services
+    firewalld:
+      service: "{{ item }}"
+      state: enabled
+      permanent: true
+    with_items:
+      - nfs
+      - samba
+      - http
 
   - name: Ensure SELinux test app is on system
     copy:

@@ -1,6 +1,2 @@
 [selinux-hosts]
 selinux.example.com
-
-[sat]
-sat5.example.com
-
