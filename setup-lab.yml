@@ -17,6 +17,7 @@
       - libselinux-python
       - policycoreutils-python
       - policycoreutils-devel
+      - policycoreutils-newrole
       - setroubleshoot-server
       - setools-console
       - httpd
