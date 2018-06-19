@@ -18,6 +18,7 @@
       - libselinux-python
       - policycoreutils-python
       - policycoreutils-devel
+      - policycoreutils-newrole
       - setroubleshoot-server
       - setools-console
       - httpd
@@ -26,6 +27,10 @@
       - samba
       - samba-client
       - tomcat
+      - make
+      - gcc-c++
+      - libcurl-devel.x86_64
+      - rpm-build
 
   - name: Create a Samba Config
     copy:
@@ -130,19 +135,37 @@
       - samba
       - http
 
-  - name: Ensure SELinux test app is on system
+  - name: Ensure SELinux test app is on the system
     copy:
       src: files/sample.war
       dest: /var/lib/tomcat/webapps/sample.war
       mode: 0644
 
-  - name: Ensure SELinux test app is on system
+  - name: Ensure SELinux test app source is on the system
     copy:
-      src: files/testapp
-      dest: /usr/local/sbin/testapp
+      src: files/testapp.c
+      dest: /root
       mode: 0755
 
-  - name: Ensure SELinux test app service file is on system
+  - name: Ensure Makefile for the test app is copied to the system
+    copy:
+      src: files/Makefile
+      dest: /root
+      mode: 0755
+
+  - name: Compile the testapp
+    command: "make -f /root/Makefile"
+
+  - name: Install the testapp
+    command: "make install -f /root/Makefile"
+
+  - name: Ensure SELinux test app service file is on the system
+    copy:
+      src: files/testapp.service
+      dest: /usr/lib/systemd/system/testapp.service
+      mode: 0644
+
+  - name: Ensure SELinux test app service file is on the system
     copy:
       src: files/testapp.service
       dest: /usr/lib/systemd/system/testapp.service
