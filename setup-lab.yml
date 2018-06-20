@@ -19,6 +19,7 @@
       - policycoreutils-python
       - policycoreutils-devel
       - policycoreutils-newrole
+      - selinux-policy-doc
       - setroubleshoot-server
       - setools-console
       - httpd
