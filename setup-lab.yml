@@ -141,35 +141,39 @@
       dest: /var/lib/tomcat/webapps/sample.war
       mode: 0644
 
+  - name: Create dir with working files
+    file:
+      path: /root/selinuxlab
+      state: directory
+      mode: 0755
+
   - name: Ensure SELinux test app source is on the system
     copy:
       src: files/testapp.c
-      dest: /root
+      dest: /root/selinuxlab
       mode: 0755
 
   - name: Ensure Makefile for the test app is copied to the system
     copy:
       src: files/Makefile
-      dest: /root
+      dest: /root/selinuxlab
       mode: 0755
 
+  - name: Ensure SELinux test app service file is on the system
+    copy:
+      src: files/testapp.service
+      dest: /root/selinuxlab/testapp.service
+      mode: 0644
+
   - name: Compile the testapp
-    command: "make -f /root/Makefile"
+    shell:
+      cmd: "make -f /root/selinuxlab/Makefile"
+      chdir: /root/selinuxlab
 
   - name: Install the testapp
-    command: "make install -f /root/Makefile"
-
-  - name: Ensure SELinux test app service file is on the system
-    copy:
-      src: files/testapp.service
-      dest: /usr/lib/systemd/system/testapp.service
-      mode: 0644
-
-  - name: Ensure SELinux test app service file is on the system
-    copy:
-      src: files/testapp.service
-      dest: /usr/lib/systemd/system/testapp.service
-      mode: 0644
+    shell:
+      cmd: "make install -f /root/selinuxlab/Makefile"
+      chdir: /root/selinuxlab
 
   - name: Reboot host
     shell: sleep 10 && /sbin/shutdown -r now
