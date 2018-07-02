@@ -6,12 +6,12 @@
   tasks:
 
   - name: Update System to latest
-    yum:
+    package:
       name: '*'
       state: latest
 
   - name: install packages
-    yum:
+    package:
       name: "{{ item }}"
       state: present
     with_items:
@@ -140,6 +140,40 @@
       src: files/sample.war
       dest: /var/lib/tomcat/webapps/sample.war
       mode: 0644
+
+  - name: Create test_www dir with webpages
+    file:
+      path: /var/test_www/html
+      state: directory
+      owner: apache
+      group: apache
+      mode: 0755
+
+  - name: Create test_www dir with webpages
+    file:
+      path: /var/test_www/html/index.html
+      state: touch
+      owner: apache
+      group: apache
+      mode: 0644
+
+  - name: Use custom port for apache binding
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen '
+      line: 'Listen 3131'
+
+  - name: Use custom port for apache binding
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: 'DocumentRoot "/var/www/html"'
+      line: 'DocumentRoot "/var/test_www/html"'
+
+  - name: Use custom port for apache binding
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '<Directory "/var/www/html">'
+      line: '<Directory "/var/test_www/html">'
 
   - name: Create dir with working files
     file:
