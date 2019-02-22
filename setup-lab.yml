@@ -33,6 +33,7 @@
       - libcurl-devel.x86_64
       - rpm-build
       - firewalld
+      - audit
 
   - name: Create a Samba Config
     copy:
@@ -121,6 +122,12 @@
       state: started
       enabled: yes
 
+  - name: Ensure auditd is enabled and running
+    service: 
+      name: auditd
+      state: started
+      enabled: yes
+
   - name: Open firewalld on port 8080/tcp
     firewalld:
       port: 8080/tcp
@@ -171,7 +178,7 @@
       regexp: 'DocumentRoot "/var/www/html"'
       line: 'DocumentRoot "/var/test_www/html"'
 
-  - name: Use custom port for apache binding
+  - name: Use custom DocumentRoot for Apache
     lineinfile:
       path: /etc/httpd/conf/httpd.conf
       regexp: '<Directory "/var/www/html">'
