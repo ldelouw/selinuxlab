@@ -123,7 +123,7 @@
       enabled: yes
 
   - name: Ensure auditd is enabled and running
-    service:
+    service: 
       name: auditd
       state: started
       enabled: yes
