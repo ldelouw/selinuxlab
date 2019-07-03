@@ -1,0 +1,224 @@
+---
+- hosts: all
+  name: Prepares a SELinux workshop
+  become: yes
+  remote_user: root
+  tasks:
+
+  - name: Update System to latest
+    package:
+      name: '*'
+      state: latest
+
+  - name: install packages
+    package:
+      name: "{{ item }}"
+      state: present
+    with_items:
+      - libselinux-python
+      - policycoreutils-python
+      - policycoreutils-devel
+      - policycoreutils-newrole
+      - setroubleshoot-server
+      - setools-console
+      - httpd
+      - php
+      - nfs-utils
+      - samba
+      - samba-client
+      - tomcat
+      - make
+      - gcc-c++
+      - libcurl-devel.x86_64
+      - rpm-build
+      - firewalld
+      - audit
+
+  - name: Create a Samba Config
+    copy:
+      src: files/smb.conf
+      dest: /etc/samba/smb.conf
+
+  - name: Create a NFS config
+    copy:
+      src: files/exports
+      dest: /etc/exports
+
+  - name: Enable NFS v4.2
+    lineinfile:
+      path: /etc/sysconfig/nfs
+      state: present
+      regexp: '^RPCNFSDARGS='
+      line: RPCNFSDARGS="-V 4.2"
+
+  - name: create the SMB Share
+    file:
+      path: /share
+      state: directory
+
+  - name: create the NFS-Share
+    file:
+      path: /nfsshare
+      state: directory
+
+  - name: Add a "tester" user with password "tester"
+    user:
+      name: tester
+      shell: /bin/bash
+      password: tester
+  
+  - name: copy mail.php
+    copy: 
+      src: files/mail.php
+      dest: /var/www/html/mail.php
+
+  - name: copy the CGI script
+    copy:
+      src: files/shadow.sh
+      dest: /var/www/cgi-bin/shadow.sh
+      mode: 0755
+
+  - name: Shoot your self in the foot set mode 666 for /etc/shadow
+    file:
+      path: /etc/shadow
+      mode: 0666
+
+  - name: Ensure SELinux is in enforcing mode
+    selinux:
+      policy: targeted
+      state: enforcing
+
+  - name: Add a SMB user "tester" with the password "tester"
+    shell: printf "tester\ntester\n" | smbpasswd -a -s tester
+
+  - name: Ensure HTTPd is enabled and running
+    service: 
+      name: httpd
+      state: started
+      enabled: yes
+
+  - name: Ensure Samba is enabled and running
+    service: 
+      name: smb
+      state: started
+      enabled: yes
+
+  - name: Ensure NFS is enabled and running
+    service: 
+      name: nfs
+      state: started
+      enabled: yes
+
+  - name: Ensure Firewalld is enabled and running
+    service:
+      name: firewalld
+      state: started
+      enabled: yes
+
+  - name: Ensure NFS is enabled and running
+    service: 
+      name: tomcat
+      state: started
+      enabled: yes
+
+  - name: Ensure auditd is enabled and running
+    service: 
+      name: auditd
+      state: started
+      enabled: yes
+
+  - name: Open firewalld on port 8080/tcp
+    firewalld:
+      port: 8080/tcp
+      state: enabled
+      permanent: true
+
+  - name: Open firewalld for our services
+    firewalld:
+      service: "{{ item }}"
+      state: enabled
+      permanent: true
+    with_items:
+      - nfs
+      - samba
+      - http
+
+  - name: Ensure SELinux test app is on the system
+    copy:
+      src: files/sample.war
+      dest: /var/lib/tomcat/webapps/sample.war
+      mode: 0644
+
+  - name: Create test_www dir with webpages
+    file:
+      path: /var/test_www/html
+      state: directory
+      owner: apache
+      group: apache
+      mode: 0755
+
+  - name: Create test_www dir with webpages
+    file:
+      path: /var/test_www/html/index.html
+      state: touch
+      owner: apache
+      group: apache
+      mode: 0644
+
+  - name: Use custom port for apache binding
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '^Listen '
+      line: 'Listen 3131'
+
+  - name: Use custom port for apache binding
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: 'DocumentRoot "/var/www/html"'
+      line: 'DocumentRoot "/var/test_www/html"'
+
+  - name: Use custom DocumentRoot for Apache
+    lineinfile:
+      path: /etc/httpd/conf/httpd.conf
+      regexp: '<Directory "/var/www/html">'
+      line: '<Directory "/var/test_www/html">'
+
+  - name: Create dir with working files
+    file:
+      path: /root/selinuxlab
+      state: directory
+      mode: 0755
+
+  - name: Ensure SELinux test app source is on the system
+    copy:
+      src: files/testapp.c
+      dest: /root/selinuxlab
+      mode: 0755
+
+  - name: Ensure Makefile for the test app is copied to the system
+    copy:
+      src: files/Makefile
+      dest: /root/selinuxlab
+      mode: 0755
+
+  - name: Ensure SELinux test app service file is on the system
+    copy:
+      src: files/testapp.service
+      dest: /root/selinuxlab/testapp.service
+      mode: 0644
+
+  - name: Compile the testapp
+    shell:
+      cmd: "make -f /root/selinuxlab/Makefile"
+      chdir: /root/selinuxlab
+
+  - name: Install the testapp
+    shell:
+      cmd: "make install -f /root/selinuxlab/Makefile"
+      chdir: /root/selinuxlab
+
+  - name: Reboot host
+    shell: sleep 10 && /sbin/shutdown -r now
+    async: 300
+    poll: 0
+    become: true
