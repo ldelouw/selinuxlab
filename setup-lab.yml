@@ -11,7 +11,7 @@
 
   - name: Install packages
     package:
-      name: "{{ item }}"
+      name: "{{ packages }}"
       state: present
     vars:
       packages:
