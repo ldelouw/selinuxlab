@@ -15,7 +15,7 @@
       state: present
     vars:
       packages:
-        - libselinux-python
+        - python3-libselinux
         - policycoreutils-python*
         - policycoreutils-devel
         - policycoreutils-newrole
@@ -40,6 +40,7 @@
     vars:
       packages:
         - tomcat
+        - libselinux-python
     when:
       # No Tomcat available for RHEL8
       - ansible_distribution == "RedHat" 
