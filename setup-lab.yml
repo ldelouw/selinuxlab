@@ -16,7 +16,7 @@
     vars:
       packages:
         - libselinux-python
-        - policycoreutils-python
+        - policycoreutils-python*
         - policycoreutils-devel
         - policycoreutils-newrole
         - setroubleshoot-server
@@ -26,13 +26,26 @@
         - nfs-utils
         - samba
         - samba-client
-        - tomcat
         - make
         - gcc-c++
         - libcurl-devel.x86_64
         - rpm-build
         - firewalld
         - audit
+
+  - name: Install packages
+    package:
+      name: "{{ packages }}"
+      state: present
+    vars:
+      packages:
+        - tomcat
+    when:
+      # No Tomcat available for RHEL8
+      - ansible_distribution == "RedHat" 
+      - ansible_distribution_major_version == "7"
+
+
 
   - name: Create a Samba Config
     copy:
@@ -148,6 +161,10 @@
       src: files/sample.war
       dest: /var/lib/tomcat/webapps/sample.war
       mode: 0644
+    when:
+      # No Tomcat available for RHEL8
+      - ansible_distribution == "RedHat" 
+      - ansible_distribution_major_version == "7"
 
   - name: Create test_www dir with webpages
     file:
