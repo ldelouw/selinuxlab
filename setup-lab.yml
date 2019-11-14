@@ -9,29 +9,30 @@
       name: '*'
       state: latest
 
-  - name: install packages
+  - name: Install packages
     package:
       name: "{{ item }}"
       state: present
-    with_items:
-      - libselinux-python
-      - policycoreutils-python
-      - policycoreutils-devel
-      - policycoreutils-newrole
-      - setroubleshoot-server
-      - setools-console
-      - httpd
-      - php
-      - nfs-utils
-      - samba
-      - samba-client
-      - tomcat
-      - make
-      - gcc-c++
-      - libcurl-devel.x86_64
-      - rpm-build
-      - firewalld
-      - audit
+    vars:
+      packages:
+        - libselinux-python
+        - policycoreutils-python
+        - policycoreutils-devel
+        - policycoreutils-newrole
+        - setroubleshoot-server
+        - setools-console
+        - httpd
+        - php
+        - nfs-utils
+        - samba
+        - samba-client
+        - tomcat
+        - make
+        - gcc-c++
+        - libcurl-devel.x86_64
+        - rpm-build
+        - firewalld
+        - audit
 
   - name: Create a Samba Config
     copy:
@@ -90,10 +91,10 @@
   - name: Add a SMB user "tester" with the password "tester"
     shell: printf "tester\ntester\n" | smbpasswd -a -s tester
 
-  - name: Ensure HTTPd is enabled and running
+  - name: Ensure HTTPd is enabled and stopped (needs to be fixed by workshop participants first)
     service: 
       name: httpd
-      state: started
+      state: stopped
       enabled: yes
 
   - name: Ensure Samba is enabled and running
