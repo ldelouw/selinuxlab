@@ -89,7 +89,7 @@
     user:
       name: tester
       shell: /bin/bash
-      password: tester
+      password: "$6$BqElT6SDhbfBOwge$6pmqUG2VPObkKu4OqTZfjSAvU9mvd.uvnZO26K5HrKMnF/Q7sTUJ6PvaEFDRWsjeoBoEyjCCt349/b4VL9G9x/"
   
   - name: copy mail.php
     copy: 
