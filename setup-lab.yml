@@ -144,7 +144,7 @@
 
   - name: Ensure NFS is enabled and running
     service: 
-      name: tomcat
+      name: nfs-server
       state: started
       enabled: yes
 
