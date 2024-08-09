@@ -56,7 +56,7 @@ int main()
 
         curl = curl_easy_init();
         if(curl) {
-            curl_easy_setopt(curl, CURLOPT_URL, "lukas-vrabec.com");
+            curl_easy_setopt(curl, CURLOPT_URL, "blog.delouw.ch");
             res = curl_easy_perform(curl);
             /* always cleanup */
             curl_easy_cleanup(curl);

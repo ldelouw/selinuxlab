@@ -9,7 +9,7 @@
       name: '*'
       state: latest
 
-  - name: Install packages (Cross Major release)
+  - name: Install required packages 
     package:
       name: "{{ packages }}"
       state: present
@@ -27,84 +27,40 @@
         - samba-client
         - make
         - gcc-c++
-        - libcurl-devel.x86_64
+        - libcurl-devel
         - rpm-build
         - firewalld
         - audit
-
-  - name: Install packages (RHEL 7 specific)
-    package:
-      name: "{{ packages }}"
-      state: present
-    vars:
-      packages:
         - tomcat
-        - libselinux-python
-    when:
-      # No Tomcat available for RHEL8
-      - ansible_distribution == "RedHat" 
-      - ansible_distribution_major_version == "7"
-
-  - name: Install packages (RHEL 8 specific)
-    package:
-      name: "{{ packages }}"
-      state: present
-    vars:
-      packages:
         - python3-libselinux
-    when:
-      - ansible_distribution == "RedHat" 
-      - ansible_distribution_major_version == "8"
+        - postfix
 
-
-
-  - name: Create a Samba Config
+  - name: Create the Samba Config
     copy:
       src: files/smb.conf
       dest: /etc/samba/smb.conf
 
-  - name: Create a NFS config
+  - name: Create the NFS export config
     copy:
       src: files/exports
       dest: /etc/exports
 
-  - name: Enable NFS v4.2 (RHEL7 only, 4.2 is default in RHEL8)
-    lineinfile:
-      path: /etc/sysconfig/nfs
-      state: present
-      regexp: '^RPCNFSDARGS='
-      line: RPCNFSDARGS="-V 4.2"
-    when:
-      - ansible_distribution == "RedHat" 
-      - ansible_distribution_major_version == "7"
-
-  - name: create the SMB Share
+  - name: Create an SMB Share
     file:
       path: /share
       state: directory
 
-  - name: create the NFS-Share
+  - name: Create an NFS-Share
     file:
       path: /nfsshare
       state: directory
 
-  - name: Add a "tester" user with password "tester"
+  - name: Add the user tester with password tester
     user:
       name: tester
       shell: /bin/bash
       password: "$6$BqElT6SDhbfBOwge$6pmqUG2VPObkKu4OqTZfjSAvU9mvd.uvnZO26K5HrKMnF/Q7sTUJ6PvaEFDRWsjeoBoEyjCCt349/b4VL9G9x/"
   
-  - name: copy mail.php
-    copy: 
-      src: files/mail.php
-      dest: /var/www/html/mail.php
-
-  - name: copy the CGI script
-    copy:
-      src: files/shadow.sh
-      dest: /var/www/cgi-bin/shadow.sh
-      mode: 0755
-
   - name: Shoot your self in the foot set mode 666 for /etc/shadow
     file:
       path: /etc/shadow
@@ -118,45 +74,15 @@
   - name: Add a SMB user "tester" with the password "tester"
     shell: printf "tester\ntester\n" | smbpasswd -a -s tester
 
-  - name: Ensure HTTPd is enabled and stopped (needs to be fixed by workshop participants first)
+  - name: Ensure Apache is enabled and stopped (needs to be fixed by workshop participants first)
     service: 
       name: httpd
       state: stopped
       enabled: yes
 
-  - name: Ensure Samba is enabled and running
-    service: 
-      name: smb
-      state: started
-      enabled: yes
-
-  - name: Ensure NFS is enabled and running
-    service: 
-      name: nfs-server
-      state: started
-      enabled: yes
-
-  - name: Ensure Firewalld is enabled and running
-    service:
-      name: firewalld
-      state: started
-      enabled: yes
-
-  - name: Ensure NFS is enabled and running
-    service: 
-      name: nfs-server
-      state: started
-      enabled: yes
-
-  - name: Ensure auditd is enabled and running
-    service: 
-      name: auditd
-      state: started
-      enabled: yes
-
-  - name: Open firewalld on port 8080/tcp
+  - name: Open firewalld on port 3131/tcp
     firewalld:
-      port: 8080/tcp
+      port: 3131/tcp
       state: enabled
       permanent: true
 
@@ -170,15 +96,11 @@
       - samba
       - http
 
-  - name: Ensure SELinux test app is on the system
+  - name: Ensure the SELinux Tomcat test app is on the system
     copy:
       src: files/sample.war
       dest: /var/lib/tomcat/webapps/sample.war
       mode: 0644
-    when:
-      # No Tomcat available for RHEL8
-      - ansible_distribution == "RedHat" 
-      - ansible_distribution_major_version == "7"
 
   - name: Create test_www dir with webpages
     file:
@@ -188,21 +110,29 @@
       group: apache
       mode: 0755
 
-  - name: Create test_www dir with webpages
-    file:
-      path: /var/test_www/html/index.html
-      state: touch
-      owner: apache
-      group: apache
-      mode: 0644
+  - name: Copy the index.html
+    copy: 
+      src: files/index.html
+      dest: /var/test_www/html/index.html
 
-  - name: Use custom port for apache binding
+  - name: Copy the mail.php PHP script
+    copy: 
+      src: files/mail.php
+      dest: /var/test_www/html/mail.php
+
+  - name: copy the CGI script
+    copy:
+      src: files/shadow.sh
+      dest: /var/www/cgi-bin/shadow.sh
+      mode: 0755
+
+  - name: Use custom port 3131 for Apache binding
     lineinfile:
       path: /etc/httpd/conf/httpd.conf
       regexp: '^Listen '
       line: 'Listen 3131'
 
-  - name: Use custom port for apache binding
+  - name: Use custom DocumentRoot for Apache
     lineinfile:
       path: /etc/httpd/conf/httpd.conf
       regexp: 'DocumentRoot "/var/www/html"'
@@ -247,6 +177,18 @@
     shell:
       cmd: "make install -f /root/selinuxlab/Makefile"
       chdir: /root/selinuxlab
+
+  - name: Enable and start required services
+    service:
+      name: "{{ item }}"
+      state: started
+      enabled: yes
+    with_items:
+        - postfix
+        - auditd
+        - smb
+        - nfs-server
+        - firewalld
 
   - name: Reboot host
     shell: sleep 10 && /sbin/shutdown -r now
